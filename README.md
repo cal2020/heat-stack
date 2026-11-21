@@ -18,6 +18,47 @@ python3 scripts/serve.py 8137 --lan # let phones / a Pi on your Wi-Fi connect
 
 Install and offline use need a secure context (`localhost`, or HTTPS when hosted).
 
+## Open World (new)
+
+Drive a GTA-style chase-cam car through one continuous world, ray-marched in real time with WebGL2:
+
+- **Bryce Valley:** fractal mountains with snow caps, golden-hour sun, clouds, atmospheric haze, and Mirror Lake with rippled reflective water and floating chrome spheres. These are Bryce's signature looks.
+- **Neon City:** a grid of towers with lit windows, neon trim and rooftop beacons.
+- **Maya Studio:** an infinite grey grid floor with clay primitives (torus, sphere, cube, cone) and a red/green/blue transform gizmo, styled after Maya's viewport.
+
+Driving works like this:
+- Arcade physics on the same terrain the shader draws, with slopes, water and building collisions.
+- A drift handbrake and a boost.
+- A chase camera that dodges walls, can be orbited by dragging, and widens its field of view at speed.
+- A rotating radar minimap and a speedometer.
+- District name toasts and radio stations.
+- **Wanted stars**, raised by speeding or crashing in the city and lost by laying low outside it.
+- Cash pickups.
+
+Drive into a glowing **job marker** to start a stacking job. When it's over, choose **Back to the streets** to return to your car.
+
+| Drive | Keyboard | iPhone / Android | Gamepad |
+| --- | --- | --- | --- |
+| Gas / brake | W / S (↑ / ↓) | ▲ / ▼ | RT / LT |
+| Steer | A / D (← / →) | ◀ ▶ | Left stick |
+| Drift / boost | Space / Shift | DRIFT | A / B |
+| Start job | E | Tap the prompt | X |
+| Look around | Drag, wheel to zoom | Drag | Right stick |
+| Camera / radio | V / R | 🎥 / 📻 | — |
+
+## Board in 3D
+
+- **Cameras:** the stacking board has four: Flat, 3D tilt, Cinematic orbit, and Free.
+- **Free camera (Maya-style):** Alt+drag to tumble, Alt+middle-drag to track, Alt+right-drag or the scroll wheel to dolly, and **F** to frame the board.
+- **On touch screens:** drag with two fingers to orbit and pinch to zoom.
+- **Worlds:** two worlds for the board: Neon City (with a wet street that reflects the board) and Bryce Valley.
+- **Street systems:**
+  - Contacts phone in timed jobs, ending in MISSION PASSED or FAILED with cash and respect.
+  - Respect builds a rank, from Street Rat up to Kingpin.
+  - At 4★ a police-chopper searchlight sweeps the board.
+  - Bribes cost run cash and drop a star.
+  - Three radio stations (R key).
+
 ## What makes it different
 
 - **Heat (0–5★).** Quads, T-spins, combos, back-to-backs, perfect clears and cash grabs build heat. Each star multiplies score by +30% and speeds gravity. At 3★ a pursuit meter starts raising roadblock rows. At 5★ a **GETAWAY** begins: clear 6 lines in 25 seconds to escape with a large bonus. Going quiet for 8 seconds cools the heat.
@@ -43,6 +84,7 @@ ES modules, WebGPU, WebGL2, a module Web Worker, Web Audio (a synthesised adapti
 ## Honest notes
 
 - **Apple Neural Engine:** web pages can't target the Neural Engine directly. On Apple Silicon, WebGPU runs on the Apple GPU through Metal, and that's where the ray tracing happens. The rival AI is a fast heuristic search on its own CPU thread, not a neural network.
+- **Bryce and Maya:** neither app can run inside a web page. The worlds recreate their signature looks (Bryce: fractal terrain, sky, water, chrome spheres; Maya: grid viewport, clay primitives, transform gizmo, Alt-key camera navigation) with the game's own shaders.
 - The game uses genre mechanics only (open-world-crime-style heat, cash and getaways). It uses no names, art, music or characters from any existing game or franchise.
 
 ## Tests

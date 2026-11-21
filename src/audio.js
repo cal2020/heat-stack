@@ -1,6 +1,6 @@
 // Synthesised audio: SFX + an adaptive night-drive soundtrack whose layers follow the heat level.
 export class Audio {
-  constructor() { this.ctx = null; this.music = true; this.sfx = true; this.intensity = 0; this.step = 0; }
+  constructor() { this.ctx = null; this.music = true; this.sfx = true; this.intensity = 0; this.step = 0; this.station = null; }
 
   unlock() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
@@ -73,26 +73,34 @@ export class Audio {
       case 'over': [440, 349, 262, 196].forEach((f, i) => this.tone(f, 0.4, { vol: 0.12, type: 'triangle', t: t + i * 0.18 })); break;
       case 'emote': this.tone(1046, 0.08, { vol: 0.06, type: 'triangle', slide: 1.5 }); break;
       case 'ui': this.tone(1200, 0.03, { vol: 0.04, type: 'triangle' }); break;
+      case 'phone': for (let i = 0; i < 6; i++) this.tone(i % 2 ? 1320 : 1760, 0.07, { vol: 0.07, type: 'square', t: t + i * 0.09 + (i > 2 ? 0.25 : 0) }); break;
+      case 'mission': [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.28, { vol: 0.09, type: i > 4 ? 'triangle' : 'sawtooth', t: t + i * 0.11, send: 0.6 })); break;
+      case 'fail': [392, 370, 311, 233].forEach((f, i) => this.tone(f, 0.35, { vol: 0.1, type: 'sawtooth', t: t + i * 0.16 })); break;
+      case 'chopper': for (let i = 0; i < 6; i++) this.hit(0.06, 0.07, 140, null, t + i * 0.075, 0.9); break;
+      case 'tune': this.hit(0.35, 0.12, 2500, null, t, 0.3); this.tone(900, 0.3, { vol: 0.03, type: 'sine', slide: 0.3 }); break;
+      case 'engine': break;
     }
   }
 
-  // 16-step sequencer at 112-140 bpm depending on heat.
+  // 16-step sequencer driven by the current radio station; layers follow the heat.
   schedule() {
     const c = this.ctx; if (!c || !this.playing) return;
-    const bpm = 112 + this.intensity * 6;
+    const st = this.station;
+    if (!st || !st.bpm) { this.nextT = c.currentTime + 0.1; return; }
+    const bpm = st.bpm + this.intensity * 5;
     const stepDur = 60 / bpm / 4;
-    const roots = [55, 55, 49, 41.2, 43.65, 43.65, 49, 49];
     while (this.nextT < c.currentTime + 0.15) {
       const s = this.step % 16, bar = Math.floor(this.step / 16) % 8, t = this.nextT, I = this.intensity;
-      const root = roots[bar];
-      if (s % 4 === 0) { this.tone(110, 0.16, { type: 'sine', vol: 0.5, bus: this.mBus, t, slide: 0.35 }); }
-      if (I >= 1 && s % 8 === 4) this.hit(0.12, 0.25, 1800, this.mBus, t, 0.8);
-      if (s % 2 === 1) this.hit(0.03, 0.07 + I * 0.02, 8000, this.mBus, t, 2);
-      if ([0, 3, 6, 10, 12, 14].includes(s)) this.tone(root * (s === 14 ? 1.5 : 1), stepDur * 1.6, { type: 'sawtooth', vol: 0.16, bus: this.mBus, t });
-      if (I >= 2) {
+      const root = st.roots[bar];
+      const kick = st.id === 'bass' ? [0, 4, 8, 11, 12] : st.id === 'tide' ? [0, 10] : [0, 4, 8, 12];
+      if (kick.includes(s)) this.tone(st.id === 'bass' ? 90 : 110, 0.18, { type: 'sine', vol: 0.5, bus: this.mBus, t, slide: 0.35 });
+      if ((I >= 1 || st.id === 'bass') && s % 8 === 4) this.hit(0.12, 0.25, 1800, this.mBus, t, 0.8);
+      if (st.id !== 'tide' && s % 2 === 1) this.hit(0.03, 0.07 + I * 0.02, 8000, this.mBus, t, 2);
+      if (st.id === 'tide' && s % 4 === 2) this.hit(0.08, 0.05, 5000, this.mBus, t, 1);
+      if ([0, 3, 6, 10, 12, 14].includes(s)) this.tone(root * (s === 14 ? 1.5 : 1), stepDur * (st.id === 'tide' ? 3 : 1.6), { type: st.bass, vol: 0.16, bus: this.mBus, t });
+      if (I >= 2 || st.id === 'tide') {
         const arp = [4, 3, 0, 2, 4, 7, 3, 2][s % 8];
-        const scale = [1, 1.122, 1.189, 1.335, 1.498, 1.587, 1.782, 2];
-        this.tone(root * 4 * scale[arp], stepDur * 0.9, { type: 'square', vol: 0.045, bus: this.mBus, t, send: 0.4 });
+        if (st.id !== 'tide' || s % 2 === 0) this.tone(root * 4 * st.scale[arp], stepDur * (st.id === 'tide' ? 1.8 : 0.9), { type: st.lead, vol: 0.045, bus: this.mBus, t, send: 0.4 });
       }
       if (I >= 4 && s % 8 === 0) this.tone(root * 8, stepDur * 4, { type: 'triangle', vol: 0.05, bus: this.mBus, t, attack: 0.05, send: 0.5 });
       this.nextT += stepDur; this.step++;

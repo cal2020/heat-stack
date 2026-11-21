@@ -5,6 +5,7 @@ export const DEFAULT_KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], soft: ['ArrowDown', 'KeyS'],
   hard: ['Space'], cw: ['ArrowUp', 'KeyX', 'KeyW'], ccw: ['KeyZ', 'ControlLeft'], r180: ['KeyQ'],
   hold: ['KeyC', 'ShiftLeft', 'ShiftRight'], pause: ['Escape', 'KeyP'],
+  radio: ['KeyR'], bribe: ['KeyB'], frame: ['KeyF'], camera: ['KeyV'],
   emote1: ['Digit1'], emote2: ['Digit2'], emote3: ['Digit3'], emote4: ['Digit4'],
 };
 
@@ -105,8 +106,14 @@ export class Input {
   // Gestures on the play surface: drag to move by cells, tap to rotate, flick down to hard drop, flick up to hold.
   bindGestures(el, cellPx) {
     let s = null;
+    const ids = new Set();
+    this.cancelGesture = () => { s = null; };
+    el.addEventListener('pointerup', e => ids.delete(e.pointerId));
+    el.addEventListener('pointercancel', e => ids.delete(e.pointerId));
     el.addEventListener('pointerdown', e => {
       if (e.pointerType === 'mouse') return;
+      ids.add(e.pointerId);
+      if (ids.size > 1) { s = null; return; }
       this.touchUsed = true;
       s = { x: e.clientX, y: e.clientY, t: performance.now(), lastX: e.clientX, lastY: e.clientY, moved: false, softAcc: 0 };
       el.setPointerCapture(e.pointerId);

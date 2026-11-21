@@ -2,6 +2,9 @@ import { Game, W, H, VIS, KINDS, SHAPES, seedFromString, GETAWAY_MS } from './en
 import { ENGINES } from './renderers.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
+import { CameraRig, CAMERA_MODES, DIST } from './camera.js';
+import { Street, STATIONS, rankOf } from './street.js';
+import { World } from './world.js';
 
 // ------------------------------------------------------------------ storage
 const store = {
@@ -23,7 +26,7 @@ const DISTRICTS = [
 function paletteOf(d) { const p = [[0, 0, 0], ...d.blocks.map(hex), [0.35, 0.36, 0.4], [1, 0.8, 0.3]]; return p; }
 
 // ------------------------------------------------------------------ state
-const defaults = { engine: 'auto', quality: 'auto', scale: 1, das: 130, arr: 12, rival: 1, music: true, sfx: true, shake: true, haptics: true, touch: null, ghost: true };
+const defaults = { engine: 'auto', quality: 'auto', scale: 1, das: 130, arr: 12, rival: 1, music: true, sfx: true, shake: true, haptics: true, touch: null, ghost: true, camera: 'tilt', world: 'city', station: 0 };
 const settings = { ...defaults, ...store.get('settings', {}) };
 let wallet = store.get('wallet', 0);
 let owned = new Set(store.get('owned', ['docks']));
@@ -45,6 +48,13 @@ let rival = null, rivalState = null;
 let challenge = null;   // decoded challenge from URL
 let wakeLock = null;
 let lastRunStats = null;
+let respect = store.get('respect', 0);
+let fromWorld = null;   // the world job we launched from, if any
+let boardWorld = null;  // temporary board scene override for world jobs
+const cam = new CameraRig(settings.camera);
+cam.onModeChange = m => { settings.camera = m; store.set('settings', settings); const el = document.querySelector('#setCamera'); if (el) el.value = m; resize(); };
+let station = STATIONS[settings.station] || STATIONS[0];
+audio.station = station;
 
 // ------------------------------------------------------------------ renderer management
 async function setupRenderer(pref) {
@@ -57,6 +67,7 @@ async function setupRenderer(pref) {
     if (await R.init(canvas)) {
       renderer = R; renderer.key = name;
       input?.bindGestures(canvas, () => layoutInfo.cs);
+      cam.bind(canvas, { onTwoFinger: () => input?.cancelGesture?.() });
       $('#engineTag').textContent = R.name;
       $('#gpuInfo').textContent = `Active engine: ${R.name}${R.adapterInfo ? ' · ' + R.adapterInfo : ''}. ` + capsText();
       resize();
@@ -75,16 +86,18 @@ function capsText() {
 
 // ------------------------------------------------------------------ layout & projection
 const layoutInfo = { cs: 30, offY: 0, zoom: 0.8, bx: 0, by: 0, bw: 0, bh: 0, w: 0, h: 0 };
-const DIST = 29.5;
+
 
 function project(x, y, z = 0.5, noCam = false) {
   const L = layoutInfo;
-  const camX = noCam ? 0 : frameCam.x * 0.85, camY = noCam ? 0 : frameCam.y * 0.85;
-  const s = L.h / ((30 - z) * L.zoom);
-  const cy = 10 - L.offY;
-  return [L.w / 2 + (x - 5 - camX) * s, L.h / 2 - (y - cy - camY) * s];
+  if (noCam || !cam.basis) {
+    const s = L.h / ((30 - z) * L.zoom);
+    const cy = 10 - L.offY;
+    return [L.w / 2 + (x - 5) * s, L.h / 2 - (y - cy) * s];
+  }
+  return cam.project([x, y, z], L.w, L.h, L.zoom);
 }
-const frameCam = { x: 0, y: 0 };
+const is3D = () => cam.mode !== 'flat' && renderer?.key !== 'canvas2d';
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -103,6 +116,7 @@ function resize() {
     if (touchOn) cs = Math.min(cs, (h - 30) / 20);
     cyPx = h / 2 + (touchOn ? -4 : 6);
   }
+  if (is3D()) cs *= 0.9;
   cs = Math.max(8, Math.floor(cs));
   L.cs = cs;
   // At z=0.5 the scale is h/((29.5)*zoom) = cs
@@ -176,9 +190,52 @@ function popup(big, sub = '', cls = 'cool', yFrac = 0.42) {
   $('#popups').appendChild(el);
   setTimeout(() => el.remove(), 1300);
 }
-function banner(text, color = '#ff4d6d') {
+function banner(text, color = '#ff4d6d', sub = '') {
   const el = document.createElement('div'); el.className = 'msg'; el.style.color = color; el.textContent = text;
+  if (sub) { const sm = document.createElement('small'); sm.textContent = sub; el.appendChild(sm); }
   $('#banner').appendChild(el); setTimeout(() => el.remove(), 2300);
+}
+
+// ------------------------------------------------------------------ street systems (jobs, chopper, bribes, radio)
+const street = new Street({
+  popup: (...a) => popup(...a), banner: (...a) => banner(...a), crew: (...a) => crew(...a), audio,
+  phone(show, d) {
+    const el = $('#phone');
+    if (!show) { el.classList.remove('ring'); setTimeout(() => { if (!street.job) el.hidden = true; }, 300); return; }
+    el.hidden = false; el.classList.add('ring');
+    $('#phoneFace').textContent = d.contact.face;
+    $('#phoneWho').textContent = `${d.contact.name} · ${d.contact.role}`;
+    $('#phoneMsg').textContent = `“${d.def.pitch}”`;
+  },
+  hud(job) {
+    const el = $('#job');
+    if (!job) { el.hidden = true; return; }
+    el.hidden = false;
+    $('#jobTitle').textContent = job.def.title.toUpperCase();
+    $('#jobProg').textContent = `${Math.min(job.prog, job.def.goal)}/${job.def.goal} ${job.def.unit}`;
+    $('#jobTime').textContent = Math.ceil(job.left / 1000) + 's';
+    $('#jobTime').classList.toggle('hot', job.left < 10000);
+  },
+});
+function setStation(i, announce = true) {
+  settings.station = (i + STATIONS.length) % STATIONS.length; store.set('settings', settings);
+  station = STATIONS[settings.station]; audio.station = station;
+  $('#radioBtn').textContent = '📻 ' + station.name;
+  if (announce) {
+    audio.play('tune');
+    const el = $('#radioCard');
+    el.innerHTML = '<b></b><small></small>'; el.querySelector('b').textContent = station.name;
+    el.querySelector('small').textContent = station.dj ? `${station.dj} — ${station.tag}` : station.tag;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  }
+}
+function updateBribe() {
+  const b = $('#bribeBtn'); if (!game || !game.heatEnabled) { b.hidden = true; return; }
+  b.hidden = game.stars < 1;
+  const cost = street.bribeCost();
+  const label = `💵 Bribe $${cost.toLocaleString()}`;
+  if (b.textContent !== label) b.textContent = label;
+  b.disabled = game.runCash < cost;
 }
 
 const CREW = {
@@ -316,6 +373,7 @@ function startGame(m) {
   } else $('#rival').hidden = true;
   $('#rightPanel').classList.toggle('compact', m === 'rival');
   input.enabled = true;
+  street.reset(game, m !== 'chill' && m !== 'rival');
   audio.intensity = 0; audio.start();
   resize();
   crew('chill', 2000, true);
@@ -345,7 +403,32 @@ function pause(on) {
 function quitToMenu() {
   running = false; paused = false; stopRival(); audio.stop();
   $('#hud').hidden = true; $('#pause').hidden = true; $('#over').hidden = true; $('#menu').hidden = false;
-  game = null; resize(); refreshMenu(); releaseWake();
+  game = null; boardWorld = null; resize(); refreshMenu(); releaseWake();
+  if (fromWorld) { fromWorld = null; enterWorld(true); }
+}
+
+// ------------------------------------------------------------------ open world
+const world = new World({
+  audio, isTouch,
+  wallet: { get: () => wallet, add: n => { wallet += n; store.set('wallet', wallet); } },
+  toast: (t, c = '#ffffff') => banner(t, c),
+  radio: () => setStation(settings.station + 1),
+  carColor: () => hex(district.accent),
+  rumble: v => { if (settings.haptics) input.rumble(v, 120); },
+  onExit: () => { world.stop(); $('#menu').hidden = false; refreshMenu(); releaseWake(); audio.stop(); },
+  onJob: (job, stars) => {
+    world.stop();
+    fromWorld = job; boardWorld = job.scene;
+    startGame('street');
+    if (stars) { game.heat = Math.min(4.5, stars); }
+    banner(job.name.toUpperCase(), '#ffcf4a', `${job.who} · stack it, cash it, lose the heat`);
+  },
+});
+function enterWorld(resume = false) {
+  $('#menu').hidden = true; $('#hud').hidden = true; $('#over').hidden = true; $('#pause').hidden = true; $('#touch').hidden = true;
+  if (!world.start(resume)) { $('#menu').hidden = false; return; }
+  requestWake();
+  if (!resume) banner('OPEN WORLD', '#29e6ff', 'drive into a glowing marker to start a job');
 }
 
 function finishRun() {
@@ -354,6 +437,10 @@ function finishRun() {
   const keep = won ? 1 : game.escapes ? 0.75 : 0.5;
   const banked = Math.round(s.runCash * keep);
   wallet += banked; store.set('wallet', wallet);
+  const rankBefore = rankOf(respect).name;
+  const respectGain = street.respectRun + game.escapes * 2;
+  respect += respectGain; store.set('respect', respect);
+  const rankNow = rankOf(respect);
   const recKey = mode === 'challenge' ? 'street' : mode;
   const recs = store.get('records', {});
   const list = recs[recKey] || [];
@@ -374,8 +461,11 @@ function finishRun() {
   const cells = [
     ['SCORE', s.score.toLocaleString(), s.score > best], ['LINES', s.lines], ['TIME', `${Math.floor(tm / 60)}:${String(tm % 60).padStart(2, '0')}`],
     ['PEAK HEAT', '★'.repeat(Math.floor(game.maxHeat)) || '—'], ['ESCAPES', game.escapes], ['BANKED', `$${banked.toLocaleString()}` + (keep < 1 ? ` (${keep * 100}%)` : '')],
+    ['JOBS', street.jobsDone], ['RESPECT', `+${respectGain}`], ['RANK', rankNow.name, rankNow.name !== rankBefore],
   ];
+  street.reset(null);
   $('#results').innerHTML = cells.map(([k, v, nb]) => `<div class="${nb ? 'newbest' : ''}"><span>${k}${nb ? ' · BEST' : ''}</span><b>${v}</b></div>`).join('');
+  $('#overMenuBtn').textContent = fromWorld ? '🚗 Back to the streets' : 'Menu';
   setTimeout(() => { $('#over').hidden = false; }, 900);
   input.enabled = false;
   stopRival();
@@ -385,6 +475,7 @@ function finishRun() {
 // ------------------------------------------------------------------ event handling
 function handleEvents() {
   const ev = game.drainEvents();
+  frameEvents = ev;
   const pal = paletteOf(district);
   for (const e of ev) {
     switch (e.type) {
@@ -448,18 +539,23 @@ function handleEvents() {
     }
   }
 }
+let frameEvents = [];
 
 // ------------------------------------------------------------------ main loop
 let last = performance.now(), fpsAcc = 0, fpsN = 0, fpsShown = 0, qTimer = 0, slowStreak = 0, photoPending = null;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(50, now - last); last = now;
+  if (world.active) return;
   input.update(dt);
   if (running && game && !paused) {
     game.update(dt);
     handleEvents();
+    const evs = frameEvents;
+    street.update(dt, evs);
+    if (game.events.length) handleEvents();
     const snap = game.snapshot();
-    updateHud(snap); drawSide(snap); drawRival();
+    updateHud(snap); drawSide(snap); drawRival(); updateBribe();
     const danger = game.dangerLevel();
     if (danger > 0.7 && crewMood !== 'nervous' && performance.now() > crewUntil) crew('nervous', 2500);
   }
@@ -507,13 +603,13 @@ function render(now, dt) {
     parallax = Math.sin(t * 0.25) * 0.6;
   }
   const sx = (Math.random() - 0.5) * fxShake * 0.5, sy = (Math.random() - 0.5) * fxShake * 0.5;
-  frameCam.x = parallax + sx + (game ? 0 : Math.sin(t * 0.2) * 1.5);
-  frameCam.y = sy + (game ? 0 : Math.cos(t * 0.17) * 0.8);
+  const { eye, target } = cam.update({ t, centerY: 10 - layoutInfo.offY, parallax, shake: [sx, sy], attract: !game, forceFlat: renderer.key === 'canvas2d' });
   const pal = paletteOf(district);
   const f = {
-    w: canvas.width, h: canvas.height, time: t, heat, camX: frameCam.x, camY: frameCam.y, flash: fxFlash,
+    w: canvas.width, h: canvas.height, time: t, heat, eye, target, flash: fxFlash,
     zoom: layoutInfo.zoom, danger, quality: settings.quality === 'auto' ? quality : +settings.quality, offsetY: layoutInfo.offY,
-    siren, accent: hex(district.accent), palette: pal,
+    siren, accent: hex(district.accent), palette: pal, scene: (boardWorld || settings.world) === 'bryce' ? 1 : 0,
+    spot: street.spot,
   };
   if (renderer.key === 'canvas2d') {
     const s = canvas.width / layoutInfo.w;
@@ -585,6 +681,7 @@ async function sharePhoto() {
 function todayKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function refreshMenu() {
   $('#walletTag').textContent = '$' + wallet.toLocaleString();
+  { const r = rankOf(respect); $('#rankTag').textContent = `${r.name} · ${respect} respect` + (r.next ? ` · next: ${r.next[1]} at ${r.next[0]}` : ''); }
   const recs = store.get('records', {});
   const daily = (recs.daily || []).filter(r => r.day === todayKey());
   $('#dailyInfo').textContent = daily.length ? `Today's best: ${daily[0].score.toLocaleString()}. Same pieces for everyone.` : `Seed for ${todayKey()}. Everyone gets the same pieces.`;
@@ -657,6 +754,8 @@ function bindSettings() {
   bind('#setHaptics', 'haptics');
   bind('#setTouch', 'touch', v => v, resize);
   bind('#setGhost', 'ghost');
+  bind('#setCamera', 'camera', v => v, () => { cam.setMode(settings.camera); });
+  bind('#setWorld', 'world', v => v);
 }
 
 // ------------------------------------------------------------------ platform: wake lock, visibility, PWA
@@ -690,6 +789,10 @@ const input = new Input((a, src) => {
     case 'ccw': game.rotate(-1); break;
     case 'r180': game.rotate(2); break;
     case 'hold': game.doHold(); break;
+    case 'radio': setStation(settings.station + 1); break;
+    case 'bribe': street.bribe(); break;
+    case 'frame': cam.frame(); cam.setMode('free'); popup('FRAMED', 'free camera · Alt+drag to orbit', 'cool', 0.15); break;
+    case 'camera': cycleCamera(); break;
     case 'emote1': emote(0); break; case 'emote2': emote(1); break; case 'emote3': emote(2); break; case 'emote4': emote(3); break;
   }
 });
@@ -697,13 +800,17 @@ input.das = settings.das; input.arr = settings.arr;
 input.bindButtons($('#touch'));
 $$('#emoteBar button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); emote(+b.dataset.emote); }));
 
-$$('.mode').forEach(b => b.addEventListener('click', () => startGame(b.dataset.mode)));
+$$('.mode').forEach(b => b.addEventListener('click', () => { if (b.dataset.mode === 'world') { audio.unlock(); enterWorld(); } else startGame(b.dataset.mode); }));
 $('#districtBtn').onclick = () => { renderDistricts(); openSheet('#districts'); };
 $('#boardBtn').onclick = () => { renderRecords(); openSheet('#records'); };
 $('#settingsBtn').onclick = () => openSheet('#settings');
 $('#pauseSettingsBtn').onclick = () => openSheet('#settings');
 $('#howBtn').onclick = () => openSheet('#how');
 $('#pauseBtn').onclick = () => pause(true);
+function cycleCamera() { const ms = Object.keys(CAMERA_MODES); cam.setMode(ms[(ms.indexOf(cam.mode) + 1) % ms.length]); popup('CAMERA', CAMERA_MODES[cam.mode], 'cool', 0.15); }
+$('#radioBtn').onclick = () => { audio.unlock(); setStation(settings.station + 1); };
+$('#camBtn').onclick = cycleCamera;
+$('#bribeBtn').addEventListener('click', () => street.bribe());
 $('#resumeBtn').onclick = () => pause(false);
 $('#restartBtn').onclick = () => startGame(mode);
 $('#quitBtn').onclick = quitToMenu;
@@ -727,10 +834,11 @@ addEventListener('keydown', () => audio.unlock(), { once: true });
   // Low-power ARM Linux (e.g. Raspberry Pi): start conservative, the adapter will climb if there's headroom.
   if (/Linux (aarch64|armv7l|armv8)/i.test(navigator.userAgent) && !/Android/i.test(navigator.userAgent)) { quality = 0; scale = Math.min(scale, 0.5); }
   bindSettings();
+  setStation(settings.station, false);
   await setupRenderer(settings.engine);
   resize(); refreshMenu();
   if (!store.get('seenHow', false)) { store.set('seenHow', true); }
   requestAnimationFrame(frame);
   // Debug/test hook (read-only usage by automated checks).
-  window.__heat = { get game() { return game; }, get renderer() { return renderer?.key; }, startGame, layoutInfo };
+  window.__heat = { get game() { return game; }, get renderer() { return renderer?.key; }, startGame, layoutInfo, world, enterWorld, cam };
 })();

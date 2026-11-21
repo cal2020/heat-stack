@@ -27,6 +27,7 @@
       <div class="label heat-label">HEAT</div>
       <div id="stars" aria-label="Heat level"></div>
       <div class="meter" id="pursuitMeter" title="Pursuit: a roadblock row rises when this fills"><i></i></div>
+      <button id="bribeBtn" class="chip gold" hidden title="Bribe (B)">💵 Bribe</button>
       <div id="getaway" hidden>
         <div class="label hot">GETAWAY</div>
         <div class="getaway-text"><b id="gaLines">0</b>/6 lines</div>
@@ -54,8 +55,13 @@
       </div>
     </section>
     <div id="incoming"><i></i></div>
+    <div id="phone" hidden><span id="phoneFace">🕴️</span><div><b id="phoneWho"></b><p id="phoneMsg"></p></div></div>
+    <div id="job" hidden><b id="jobTitle"></b><span id="jobProg"></span><em id="jobTime"></em></div>
+    <div id="radioCard"></div>
     <div id="topbar">
       <button class="icon" id="pauseBtn" aria-label="Pause">⏸</button>
+      <button class="chip" id="radioBtn" title="Radio (R)">📻 NEON 88.8</button>
+      <button class="chip" id="camBtn" title="Camera (V)">🎥</button>
       <span id="engineTag"></span>
       <span id="fps"></span>
     </div>
@@ -86,7 +92,8 @@
       <p class="tag">Stack it. Cash it. Lose the heat.</p>
       <div id="challenge" hidden></div>
       <div class="modes">
-        <button class="mode primary" data-mode="street"><b>Street Run</b><small>Endless. Clears build heat; heat pays more and hits harder.</small></button>
+        <button class="mode primary wide" data-mode="world"><b>🚗 Open World</b><small>Drive Bryce Valley, Neon City and Maya Studio. Grab cash, shake the cops, and pull into glowing markers for stacking jobs.</small></button>
+        <button class="mode" data-mode="street"><b>Street Run</b><small>Endless. Clears build heat; heat pays more and hits harder.</small></button>
         <button class="mode" data-mode="rival"><b>Crew Rival</b><small>Same pieces vs. the AI crew. Lines you send come back as garbage.</small></button>
         <button class="mode" data-mode="daily"><b>Daily Heist</b><small id="dailyInfo">Today's seed. Everyone gets the same pieces.</small></button>
         <button class="mode" data-mode="chill"><b>Night Drive</b><small>No heat, no pursuit. Just stacking and the city.</small></button>
@@ -97,6 +104,7 @@
         <button id="settingsBtn">⚙ Settings</button>
         <button id="howBtn">? How to play</button>
       </div>
+      <p class="rank" id="rankTag"></p>
       <div class="player"><label>Tag <input id="nameInput" maxlength="14" autocomplete="nickname" spellcheck="false"></label><span id="installSlot"></span></div>
       <p class="fine" id="caps"></p>
     </div>
@@ -149,14 +157,18 @@
         <li>At <b>3★</b> the pursuit starts: a roadblock row rises when the meter fills.</li>
         <li>At <b>5★</b> a <b>GETAWAY</b> begins. Clear 6 lines in 25s to escape with a big bonus. Miss it and two roadblocks rise.</li>
         <li><b>$ blocks</b> are cash. Clear their row to grab it. Spend cash on new districts.</li>
-        <li>Go quiet for 8s and the heat cools off.</li>
+        <li>Go quiet for 8s and the heat cools off. Or <b>bribe</b> the cops with run cash to drop a star.</li>
+        <li>At <b>4★</b> a chopper searchlight sweeps the board. Keep your piece out of the light or the pursuit fills faster.</li>
+        <li>Contacts <b>call with jobs</b>. Finish them in time for cash and <b>respect</b>, which raises your rank.</li>
       </ul>
       <div class="keys">
         <div><kbd>←</kbd><kbd>→</kbd> move</div><div><kbd>↓</kbd> soft drop</div><div><kbd>Space</kbd> hard drop</div>
         <div><kbd>↑</kbd>/<kbd>X</kbd> rotate ⟳</div><div><kbd>Z</kbd> rotate ⟲</div><div><kbd>Q</kbd> 180°</div>
         <div><kbd>C</kbd>/<kbd>Shift</kbd> hold</div><div><kbd>1</kbd>–<kbd>4</kbd> emotes</div><div><kbd>Esc</kbd> pause</div>
+        <div><kbd>R</kbd> radio</div><div><kbd>B</kbd> bribe</div><div><kbd>V</kbd> camera</div>
+        <div><kbd>Alt</kbd>+drag orbit</div><div><kbd>Alt</kbd>+right-drag zoom</div><div><kbd>F</kbd> frame board</div>
       </div>
-      <p class="fine">Touch: drag to slide, tap to rotate, flick down to drop, flick up to hold, or use the buttons. Gamepads work too.</p>
+      <p class="fine">Touch: drag to slide, tap to rotate, flick down to drop, flick up to hold, or use the buttons. Two fingers: drag to orbit the 3D camera, pinch to zoom, double two-finger tap to re-frame. Gamepads work too.</p>
       <button class="close">Got it</button>
     </div>
   </div>
@@ -167,6 +179,10 @@
       <div class="grid">
         <label>Rendering engine
           <select id="setEngine"><option value="auto">Auto (best available)</option><option value="webgpu">WebGPU · ray traced</option><option value="webgl2">WebGL2 · ray traced</option><option value="canvas2d">Canvas 2D · sprites</option></select></label>
+        <label>Camera
+          <select id="setCamera"><option value="flat">Flat (classic)</option><option value="tilt">3D tilt</option><option value="orbit">Cinematic orbit</option><option value="free">Free · Maya-style</option></select></label>
+        <label>World
+          <select id="setWorld"><option value="city">Neon City</option><option value="bryce">Bryce Valley</option></select></label>
         <label>Ray tracing quality
           <select id="setQuality"><option value="auto">Auto (adapts to FPS)</option><option value="2">Ultra · shadows + reflections</option><option value="1">High · shadows</option><option value="0">Low · primary rays</option></select></label>
         <label>Render scale <input id="setScale" type="range" min="0.35" max="1" step="0.05"><output id="scaleOut"></output></label>

@@ -1,18 +1,21 @@
 // Three interchangeable rendering engines sharing one interface:
 //   await R.init(canvas) -> bool ; R.resize(w,h,scale) ; R.draw(viewBuf, frame) ; R.name
 // frame = { time, heat, camX, camY, flash, zoom, danger, quality, offsetY, siren, accent:[r,g,b], palette:[[r,g,b]x10] }
-import { GLSL_VS, GLSL_FS, WGSL } from './shaders.js';
+import { GLSL_VS, GLSL_FS, WGSL, UNIFORM_FLOATS } from './shaders.js';
 
 const BW = 10, BH = 20;
 
 function packUniforms(f, out) {
-  out[0] = f.w; out[1] = f.h; out[2] = f.time; out[3] = f.heat;
-  out[4] = f.camX; out[5] = f.camY; out[6] = f.flash; out[7] = f.zoom;
-  out[8] = f.danger; out[9] = f.quality; out[10] = f.offsetY; out[11] = f.siren;
-  out[12] = f.accent[0]; out[13] = f.accent[1]; out[14] = f.accent[2]; out[15] = 0;
+  const v = (i, a, b, c, d) => { out[i] = a; out[i + 1] = b; out[i + 2] = c; out[i + 3] = d; };
+  v(0, f.w, f.h, f.time, f.heat);
+  v(4, f.eye[0], f.eye[1], f.eye[2], f.zoom);
+  v(8, f.danger, f.quality, f.flash, f.siren);
+  v(12, f.accent[0], f.accent[1], f.accent[2], f.scene);
+  v(16, f.target[0], f.target[1], f.target[2], 0);
+  v(20, f.spot[0], f.spot[1], f.spot[2], 0);
   for (let i = 0; i < 10; i++) {
     const c = f.palette[i] || [0, 0, 0];
-    out[16 + i * 4] = c[0]; out[17 + i * 4] = c[1]; out[18 + i * 4] = c[2]; out[19 + i * 4] = 1;
+    v(24 + i * 4, c[0], c[1], c[2], 1);
   }
   return out;
 }
@@ -42,13 +45,13 @@ export class GPURenderer {
         fragment: { module: mod, entryPoint: 'fs', targets: [{ format: this.format }] },
         primitive: { topology: 'triangle-list' },
       });
-      this.ubuf = this.device.createBuffer({ size: 56 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      this.ubuf = this.device.createBuffer({ size: UNIFORM_FLOATS * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       this.tex = this.device.createTexture({ size: [BW, BH], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
       this.bind = this.device.createBindGroup({
         layout: this.pipeline.getBindGroupLayout(0),
         entries: [{ binding: 0, resource: { buffer: this.ubuf } }, { binding: 1, resource: this.tex.createView() }],
       });
-      this.u = new Float32Array(56);
+      this.u = new Float32Array(UNIFORM_FLOATS);
       this.lost = false;
       this.device.lost.then(() => { this.lost = true; });
       this.adapterInfo = adapter.info ? `${adapter.info.vendor || ''} ${adapter.info.architecture || ''}`.trim() : '';
@@ -86,7 +89,7 @@ export class GLRenderer {
     this.p = p; gl.useProgram(p);
     this.loc = {
       u0: gl.getUniformLocation(p, 'u0'), u1: gl.getUniformLocation(p, 'u1'), u2: gl.getUniformLocation(p, 'u2'),
-      u3: gl.getUniformLocation(p, 'u3'), pal: gl.getUniformLocation(p, 'pal'), board: gl.getUniformLocation(p, 'board'),
+      u3: gl.getUniformLocation(p, 'u3'), u4: gl.getUniformLocation(p, 'u4'), u5: gl.getUniformLocation(p, 'u5'), pal: gl.getUniformLocation(p, 'pal'), board: gl.getUniformLocation(p, 'board'),
     };
     this.tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
@@ -95,7 +98,7 @@ export class GLRenderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, BW, BH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     gl.uniform1i(this.loc.board, 0);
     this.vao = gl.createVertexArray();
-    this.u = new Float32Array(56);
+    this.u = new Float32Array(UNIFORM_FLOATS);
     const dbg = gl.getExtension('WEBGL_debug_renderer_info');
     this.adapterInfo = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : '';
     return true;
@@ -108,7 +111,8 @@ export class GLRenderer {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, BW, BH, gl.RGBA, gl.UNSIGNED_BYTE, view);
     gl.uniform4fv(this.loc.u0, u.subarray(0, 4)); gl.uniform4fv(this.loc.u1, u.subarray(4, 8));
     gl.uniform4fv(this.loc.u2, u.subarray(8, 12)); gl.uniform4fv(this.loc.u3, u.subarray(12, 16));
-    gl.uniform4fv(this.loc.pal, u.subarray(16, 56));
+    gl.uniform4fv(this.loc.u4, u.subarray(16, 20)); gl.uniform4fv(this.loc.u5, u.subarray(20, 24));
+    gl.uniform4fv(this.loc.pal, u.subarray(24, 64));
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }

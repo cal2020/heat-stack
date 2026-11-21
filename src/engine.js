@@ -351,7 +351,7 @@ export class Game {
     const newLevel = this.startLevel + Math.floor(this.lines / 10);
     if (newLevel > this.level) { this.level = newLevel; this.emit('levelup', { level: newLevel }); }
 
-    this.emit('clear', { rows, lines: n, label, spin: spin.spin, mini: spin.mini, b2b: b2bActive, combo: this.combo, pc, gained, attack, cash: cashGain });
+    this.emit('clear', { rows, lines: n, label, spin: spin.spin, mini: spin.mini, b2b: b2bActive, combo: this.combo, pc, gained, attack, cash: cashGain, cashCells });
 
     if (this.heatEnabled) {
       const before = this.stars;
