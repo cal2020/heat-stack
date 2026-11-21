@@ -1,0 +1,17 @@
+{
+  "name": "HEAT STACK",
+  "short_name": "HEAT STACK",
+  "description": "Ray-traced neon-city falling-block game with heat, cash, getaways and an AI rival crew.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#07040f",
+  "theme_color": "#07040f",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,1 @@
+{"type":"module","name":"heat-stack","private":true,"scripts":{"test":"node --test test/*.test.mjs","start":"python3 scripts/serve.py 8137"}}
