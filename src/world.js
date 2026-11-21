@@ -197,7 +197,7 @@ export class World {
     const N = 240, c = document.createElement('canvas'); c.width = c.height = N;
     const ctx = c.getContext('2d'), img = ctx.createImageData(N, N);
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
-      const x = -600 + (i + 0.5) / N * 1200, z = 600 - (j + 0.5) / N * 1200;
+      const x = 600 - (i + 0.5) / N * 1200, z = 600 - (j + 0.5) / N * 1200;
       const h = terrainH(x, z, 3);
       let r, g, b;
       if (h < 0) { r = 40; g = 110; b = 150; }
@@ -309,7 +309,7 @@ export class World {
     const grip = ctl.drift ? 0.9 : 0.0008;
     lat *= Math.pow(grip, dt);
     const steerRate = ctl.steer * clamp(Math.abs(fwd) / 10, 0, 1) * (ctl.drift ? 2.6 : 1.9) * Math.sign(fwd || 1);
-    c.yaw += steerRate * dt * (1 - clamp(Math.abs(fwd) / 140, 0, 0.45));
+    c.yaw -= steerRate * dt * (1 - clamp(Math.abs(fwd) / 140, 0, 0.45));
     // slope resistance
     const ahead = terrainH(c.x + fx * 2, c.z + fz * 2);
     const slope = (ahead - ground) / 2;
@@ -546,14 +546,14 @@ export class World {
     ctx.save();
     ctx.beginPath(); ctx.arc(R, R, R - 4, 0, Math.PI * 2); ctx.clip();
     ctx.translate(R, R);
-    ctx.rotate(-c.yaw);                // heading up
+    ctx.rotate(c.yaw);                 // heading up
     ctx.scale(k, k);
     // map image covers world [-600,600] with +z up
     ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(this.mapImg, -600 - c.x, -600 + c.z, 1200, 1200);
+    ctx.drawImage(this.mapImg, c.x - 600, c.z - 600, 1200, 1200);
     ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(-2000, -2000, 4000, 4000);
     const blip = (x, z, color, size, shape = 'dot') => {
-      const px = x - c.x, pz = -(z - c.z);
+      const px = -(x - c.x), pz = -(z - c.z);
       ctx.fillStyle = color;
       ctx.beginPath();
       if (shape === 'sq') ctx.rect(px - size / k, pz - size / k, 2 * size / k, 2 * size / k); else ctx.arc(px, pz, size / k, 0, Math.PI * 2);
@@ -567,7 +567,7 @@ export class World {
       const dx = j.x - c.x, dz = j.z - c.z, d = Math.hypot(dx, dz);
       if (d * k < R - 10) continue;
       const ang = Math.atan2(dx, dz) - c.yaw;
-      const ex = R + Math.sin(ang) * (R - 14), ey = R - Math.cos(ang) * (R - 14);
+      const ex = R - Math.sin(ang) * (R - 14), ey = R - Math.cos(ang) * (R - 14);
       ctx.fillStyle = j.studio ? '#5ab4ff' : '#ffcf4a'; ctx.beginPath(); ctx.arc(ex, ey, 7, 0, Math.PI * 2); ctx.fill();
     }
     // player arrow
@@ -577,6 +577,6 @@ export class World {
     ctx.strokeStyle = this.stars ? (Math.sin(performance.now() / 120) > 0 ? '#ff3355' : '#3d7bff') : 'rgba(255,255,255,.5)';
     ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(R, R, R - 4, 0, Math.PI * 2); ctx.stroke();
     const na = -c.yaw; ctx.fillStyle = '#fff'; ctx.font = '900 22px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('N', R + Math.sin(na) * (R - 22), R - Math.cos(na) * (R - 22));
+    ctx.fillText('N', R - Math.sin(na) * (R - 22), R - Math.cos(na) * (R - 22));
   }
 }
