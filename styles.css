@@ -229,3 +229,22 @@ body.portrait #engineTag { display: none; }
 
 #job { transform: none; max-width: 180px; gap: 6px; padding: 5px 8px; font-size: 10px; }
 #job b { max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Standalone classic arcade modes. Controls stay outside the play surface. */
+#arcade { position:absolute; inset:0; z-index:30; background:#070b18; display:grid; grid-template-rows:auto auto minmax(110px,1fr) 26px auto auto; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+.ar-top { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; gap:8px; border-bottom:1px solid #24334b; }
+.ar-top div { text-align:center; } .ar-top b { font-size:clamp(13px,3vw,22px); letter-spacing:.08em; } .ar-top small { display:block; margin-top:4px; font-size:11px; color:#92adc8; }
+#arcade button { border:1px solid #39536b; border-radius:12px; background:#14213a; min-height:44px; padding:8px 14px; color:#e5f8ff; touch-action:none; font-weight:750; }
+#arcade button:active { background:#2f6079; } #arcade button:focus-visible { outline:3px solid #ffcf4a; outline-offset:2px; }
+.ar-stats { display:flex; justify-content:space-around; align-items:center; gap:8px; padding:9px 8px; color:#9fb7d0; font:11px var(--mono); flex-wrap:wrap; }
+.ar-stats b { color:#ffcf4a; font-size:17px; } .ar-view { position:relative; min-height:0; overflow:hidden; } #arCanvas { display:block; width:100%; height:100%; touch-action:none; }
+#arMessage { padding:3px 8px; text-align:center; font-size:12px; color:#81e9ff; overflow:hidden; }
+.ar-controls { width:min(620px,100%); margin:0 auto; padding:4px 14px 8px; display:grid; grid-template-columns:1fr 1.45fr; column-gap:20px; }
+.ar-dpad { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:46px 46px; gap:5px; } .ar-dpad [data-ar=up] { grid-column:2; } .ar-dpad [data-ar=left] { grid-column:1; grid-row:2; } .ar-dpad [data-ar=down] { grid-column:2; grid-row:2; } .ar-dpad [data-ar=right] { grid-column:3; grid-row:2; }
+#arcade .ar-dpad button { padding:4px; min-width:0; } .ar-rotations { display:flex; flex-direction:column; align-items:stretch; gap:8px; } .ar-rotations>div { display:flex; gap:6px; } #arcade .ar-rotations>div button { flex:1; min-width:0; padding:8px 4px; font-size:16px; min-height:48px; }
+#arcade .ar-small { font-size:11px; min-height:36px; } .ar-drop-row { grid-column:1/-1; margin-top:30px; display:flex; justify-content:space-between; align-items:center; gap:12px; } #arcade .ar-drop { min-height:56px; min-width:120px; background:#79324c; border-color:#ff718c; letter-spacing:.08em; }
+.ar-drop-row span { font-size:12px; color:#9fb7d0; } .ar-tile-move { grid-column:1/-1; display:flex; justify-content:center; gap:16px; } #arcade .ar-tile-move button { min-width:65px; min-height:52px; }
+.ar-help { color:#92adc8; padding:5px 14px 10px; font-size:11px; max-height:100px; overflow:auto; } .ar-help summary { cursor:pointer; } .ar-help p { line-height:1.5; margin:7px 0; }
+.ar-overlay { position:absolute; inset:0; background:#070b18dc; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; padding:20px; text-align:center; } .ar-overlay>b { font-size:32px; color:#ffcf4a; } .ar-overlay p { margin:0 0 8px; color:#bad0e5; }
+@media(min-width:850px) { .ar-controls { padding-bottom:14px; } }
+@media(max-height:580px) and (min-width:600px) { #arcade { grid-template-rows:auto auto minmax(90px,1fr) 22px; padding-right:330px; } .ar-controls { position:absolute; right:0; top:65px; width:320px; } .ar-help { position:absolute; right:0; bottom:0; width:320px; } }

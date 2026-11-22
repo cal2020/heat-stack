@@ -5,6 +5,7 @@ import { Input } from './input.js';
 import { CameraRig, CAMERA_MODES, DIST } from './camera.js';
 import { Street, STATIONS, rankOf } from './street.js';
 import { World } from './world.js';
+import { Arcade } from './arcade.js';
 
 // ------------------------------------------------------------------ storage
 const store = {
@@ -422,6 +423,14 @@ function quitToMenu() {
   if (fromWorld) { fromWorld = null; enterWorld(true); }
 }
 
+// ------------------------------------------------------------------ standalone arcade variants
+const arcade = new Arcade({ audio, onExit: () => { $('#menu').hidden = false; refreshMenu(); releaseWake(); } });
+function enterArcade(kind) {
+  clearOverlays(); input.enabled = false; input.held.clear(); running = false; paused = false;
+  $('#menu').hidden = true; $('#hud').hidden = true; $('#touch').hidden = true;
+  arcade.start(kind); requestWake();
+}
+
 // ------------------------------------------------------------------ open world
 const world = new World({
   audio, isTouch,
@@ -570,7 +579,7 @@ let last = performance.now(), fpsAcc = 0, fpsN = 0, fpsShown = 0, qTimer = 0, sl
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(50, now - last); last = now;
-  if (world.active) return;
+  if (world.active || arcade.active) return;
   input.update(dt);
   if (running && game && !paused) {
     if (!(mode === 'revolutions' && cam.revolution)) game.update(dt);
@@ -825,7 +834,7 @@ input.das = settings.das; input.arr = settings.arr;
 input.bindButtons($('#touch'));
 $$('#emoteBar button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); emote(+b.dataset.emote); }));
 
-$$('.mode').forEach(b => b.addEventListener('click', () => { if (b.dataset.mode === 'getaway') { audio.unlock(); enterWorld(false, 'getaway'); } else if (b.dataset.mode === 'world') { audio.unlock(); enterWorld(); } else startGame(b.dataset.mode); }));
+$$('.mode').forEach(b => b.addEventListener('click', () => { if (b.dataset.mode === 'pit' || b.dataset.mode === 'tiles') { enterArcade(b.dataset.mode); } else if (b.dataset.mode === 'getaway') { audio.unlock(); enterWorld(false, 'getaway'); } else if (b.dataset.mode === 'world') { audio.unlock(); enterWorld(); } else startGame(b.dataset.mode); }));
 $('#districtBtn').onclick = () => { renderDistricts(); openSheet('#districts'); };
 $('#boardBtn').onclick = () => { renderRecords(); openSheet('#records'); };
 $('#settingsBtn').onclick = () => openSheet('#settings');
@@ -865,5 +874,7 @@ addEventListener('keydown', () => audio.unlock(), { once: true });
   if (!store.get('seenHow', false)) { store.set('seenHow', true); }
   requestAnimationFrame(frame);
   // Debug/test hook (read-only usage by automated checks).
-  window.__heat = { get game() { return game; }, get renderer() { return renderer?.key; }, startGame, layoutInfo, world, enterWorld, cam };
+  window.__heat = { get game() { return game; }, get renderer() { return renderer?.key; }, startGame, layoutInfo, world, enterWorld, cam, arcade, enterArcade };
+  const arcadeLink = new URLSearchParams(location.search).get('arcade');
+  if (arcadeLink === 'tiles' || arcadeLink === 'pit') enterArcade(arcadeLink);
 })();

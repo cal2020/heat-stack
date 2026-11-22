@@ -105,3 +105,30 @@ Phone calls disappear after 3.2 seconds. Banners replace each other and disappea
 Free driving begins on the flat eastbound road at the city entrance. Hill resistance is based on slope angle so the car can climb hills under normal throttle. The mountain route remains the starting point for Midnight Getaway.
 
 Press **E** (or tap the marker prompt) to park exactly at a job marker and play an eight-line stacking job. Clear eight lines or end the run, and after a brief result message driving resumes automatically at the same position and heading. Wanted level, cash, pickups and camera state stay in the driving session.
+
+## Klax-style Tile Ramp and Blockout-style 3D Pit
+
+These are separate original game implementations with their own rules, controls and local high scores. They are available from the main menu and can be opened directly:
+
+- Tile Ramp: https://cal2020.github.io/heat-stack/?arcade=tiles
+- 3D Pit: https://cal2020.github.io/heat-stack/?arcade=pit
+
+### Tile Ramp
+Move the paddle left/right to catch incoming colored tiles. It holds five tiles in a stack. Drop the top tile into the selected bin column with Space/Down or **DROP**. Up or **TOSS** sends the top tile back up the ramp. Match at least three tiles horizontally, vertically, or diagonally; cleared tiles collapse and can create scoring cascades. Five misses or overflowing a bin ends the run. Five matches advance a wave.
+
+### 3D Pit
+Fit pieces made of solid voxels into a 5×5×12 well. A full 5×5 horizontal layer clears, and everything above it drops one layer. Pieces rotate about three independent axes, with collision checks and a landing outline. The game ends when another piece cannot enter the pit. WebGL renders the solid cubes; a software 3D fallback is available when WebGL is absent.
+
+- Arrow keys or the directional pad move across the pit floor.
+- Q/A rotate X forward/back, W/S rotate Y, E/D rotate Z. On touch screens use **X/Y/Z** and **Direction** to reverse rotation.
+- Space or **DROP** instantly drops a piece. Its button has a separate row below rotation.
+- Option-drag on Mac (Alt-drag elsewhere) or two-finger drag orbits the camera. Pinch or the mouse wheel zooms; **Reset view** restores the initial camera.
+- Escape/P pauses; **Menu** returns to the main menu.
+
+Each mode includes in-game rules, pause, restart and a separate local best score. Gamepads support movement and actions. In the pit, A/B/X rotate X/Y/Z and Y drops; in the tile game A drops and B tosses.
+
+### Arcade screenshots
+
+![Blockout-style 3D pit on a phone](docs/blockout-mobile.png)
+
+![Klax-style tile ramp on a phone](docs/klax-mobile.png)
