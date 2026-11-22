@@ -5,7 +5,7 @@ import { Input } from './input.js';
 import { CameraRig, CAMERA_MODES, DIST } from './camera.js';
 import { Street, STATIONS, rankOf } from './street.js';
 import { World } from './world.js';
-import { Arcade } from './arcade.js';
+import { Arcade } from './arcade.js?v=20261122-afterhours';
 
 // ------------------------------------------------------------------ storage
 const store = {

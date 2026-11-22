@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-22 — Klax: After Hours
+- Fix Right being dispatched as rotation, which crashed Klax and stopped the animation loop.
+- Add WASD and Enter gameplay bindings, canvas lane selection, empty-stack feedback and focus-pause recovery.
+- Replace the flat Klax view with an instanced 3D WebGL cabinet, beveled tumbling tiles, shadows, bloom, animated drops, landing preview and match particles.
+- Enlarge the phone playfield, show keyboard hints, and add tile pips.
+- Version the changed browser entry modules so existing visitors receive the control fix.
+
+
 ## 2026-11-22 — Classic arcade variants
 - Add a Klax-style tile ramp with catch/stack/drop/toss, four matching directions, gravity cascades, wave progression and miss limits.
 - Add a Blockout-style true 3D voxel pit with three-axis rotation, collision checks, ghost landing positions, complete-layer clearing and top-out.

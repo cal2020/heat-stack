@@ -132,3 +132,15 @@ Each mode includes in-game rules, pause, restart and a separate local best score
 ![Blockout-style 3D pit on a phone](docs/blockout-mobile.png)
 
 ![Klax-style tile ramp on a phone](docs/klax-mobile.png)
+
+## Klax: After Hours — graphics and control overhaul
+
+The Klax mode now uses an instanced WebGL scene: beveled tiles tumble along a lit ramp, cast shadows, and glow through a bloom pass. The cabinet shows the catch stack, highlights the selected lane, previews the landing cell, and animates dropped tiles and match particles. Tile pips supplement the colors. A software renderer remains available if WebGL is unavailable.
+
+- Move: **← / →** or **A / D**, on-screen arrows, or tap/drag a lane.
+- Drop: **Space**, **Enter**, **↓**, **S** or **J**.
+- Toss back: **↑**, **W** or **K**.
+- The first tile arrives over the starting paddle. The visible stack counter confirms catches. Trying to drop an empty stack explains what to do.
+- Returning focus and pressing a gameplay key resumes a game paused by a window switch. Manual pauses still require Resume.
+
+The former Right-button crash (movement being misrouted to rotation) is fixed for both arcade modes and covered by a regression test. Keyboard, mouse buttons, touch, focus recovery, and continued animation are checked in Chromium.

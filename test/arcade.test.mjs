@@ -14,3 +14,15 @@ test('tile matches horizontal, vertical and both diagonals',()=>{for(const cells
 test('tile clears collapse into a scoring cascade',()=>{const g=new TileGame();g.tiles=[];g.grid[0]=[2,0,0,0,0];g.grid[1]=[2,0,0,0,0];g.grid[2]=[1,1,1,2,0];g.resolve();assert.equal(g.matches,1);g.update(250);assert.equal(g.matches,2);assert.equal(g.chain,2);g.update(250);assert.equal(g.grid.flat().filter(Boolean).length,0);assert.ok(g.score>=450);});
 test('tile misses and overflowing bins end the game',()=>{const g=new TileGame();for(let i=0;i<8;i++)g.miss();assert.equal(g.over,true);assert.equal(g.drops,5);const h=new TileGame();h.grid[2]=[1,2,1,2,1];h.stack=[3];h.drop();assert.equal(h.over,true);});
 test('five tile matches advance a wave',()=>{const g=new TileGame();g.waveMatches=4;g.grid[0][0]=g.grid[1][0]=g.grid[2][0]=1;g.resolve();assert.equal(g.wave,2);});
+
+test('right action moves the Klax paddle rather than calling a rotation method', async()=>{
+  const {Arcade}=await import('../src/arcade.js');const game=new TileGame({seed:1});
+  const a={kind:'tiles',game,paused:false,reverse:false,h:{audio:{play(){}}},message(){}};
+  Arcade.prototype.act.call(a,'right');assert.equal(game.lane,3);
+  Arcade.prototype.act.call(a,'left');assert.equal(game.lane,2);
+  for(let i=0;i<15;i++)Arcade.prototype.act.call(a,'right');assert.equal(game.lane,4);
+});
+test('Klax binds arrow keys, WASD, Space and Enter to gameplay actions',async()=>{
+  const {Arcade}=await import('../src/arcade.js');const a={kind:'tiles',game:{over:false},paused:false};
+  for(const [key,action]of Object.entries({ArrowRight:'right',ArrowLeft:'left',KeyA:'left',KeyD:'right',Space:'drop',Enter:'drop',KeyW:'toss',ArrowUp:'toss'}))assert.equal(Arcade.prototype.keyAction.call(a,key),action);
+});

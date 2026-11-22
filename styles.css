@@ -248,3 +248,24 @@ body.portrait #engineTag { display: none; }
 .ar-overlay { position:absolute; inset:0; background:#070b18dc; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; padding:20px; text-align:center; } .ar-overlay>b { font-size:32px; color:#ffcf4a; } .ar-overlay p { margin:0 0 8px; color:#bad0e5; }
 @media(min-width:850px) { .ar-controls { padding-bottom:14px; } }
 @media(max-height:580px) and (min-width:600px) { #arcade { grid-template-rows:auto auto minmax(90px,1fr) 22px; padding-right:330px; } .ar-controls { position:absolute; right:0; top:65px; width:320px; } .ar-help { position:absolute; right:0; bottom:0; width:320px; } }
+
+/* After Hours: a spacious, playable neon cabinet. */
+#arcade { grid-template-rows:auto auto auto minmax(110px,1fr) 26px auto auto; }
+.ar-key-hint { font-size:10px; color:#91adca; text-align:center; padding:0 8px 7px; letter-spacing:.025em; }
+#arcade.klax-deluxe { background:radial-gradient(ellipse at 50% 20%,#1a1841,#080c1c 70%); }
+.klax-deluxe .ar-top { background:linear-gradient(110deg,#0d1225,#21152c); border-bottom:1px solid #ffffff15; }
+.klax-deluxe .ar-top b { letter-spacing:.12em; font-weight:900; color:#e3fbff; text-shadow:0 0 20px #70eaff77; }
+.klax-deluxe .ar-top small { color:#ba91d3; letter-spacing:.24em; font-size:9px; }
+.klax-deluxe .ar-stats { background:#09102288; padding:10px 12px; font-size:10px; }
+.klax-deluxe .ar-stats b { font-size:23px; color:#79f2e5; }
+.klax-deluxe .ar-view { background:#060b16; border-top:1px solid #1d3145; border-bottom:1px solid #263449; }
+.klax-deluxe .ar-controls { max-width:620px; padding:12px 18px 10px; }
+#arcade.klax-deluxe .ar-tile-move { justify-content:space-between; gap:12px; }
+#arcade.klax-deluxe .ar-tile-move button { flex:1; min-height:52px; border-color:#4ab8c755; background:linear-gradient(160deg,#263c54,#122039); box-shadow:inset 0 1px 0 #ffffff15,0 5px 0 #050814,0 10px 25px #0005; }
+#arcade.klax-deluxe button:active { transform:translateY(3px); background:#315770; box-shadow:0 2px 0 #050814; }
+#arcade.klax-deluxe .ar-drop { background:linear-gradient(150deg,#aa3e79,#5e2856); border-color:#f493d9; box-shadow:0 0 25px #e76fbc22,inset 0 1px 0 #ffffff33; }
+.klax-deluxe .ar-drop-row { margin-top:24px; } .klax-deluxe #arMessage { color:#8ce7db; font-size:11px; }
+@media(max-width:430px) { .klax-deluxe .ar-top b { font-size:12px; } .klax-deluxe .ar-stats { gap:7px; font-size:9px; padding:7px; } }
+@media(max-height:580px) and (min-width:600px) { #arcade { grid-template-rows:auto auto auto minmax(90px,1fr) 22px; } }
+
+#arCanvas:focus { outline:none; }

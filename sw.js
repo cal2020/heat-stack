@@ -1,7 +1,7 @@
 // Offline-first cache so the game runs installed on Mac, Android and Raspberry Pi without a network.
-const CACHE = 'heat-stack-v5-arcade';
+const CACHE = 'heat-stack-v6-klax';
 const ASSETS = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg',
-  'src/main.js', 'src/engine.js', 'src/ai.js', 'src/renderers.js', 'src/shaders.js', 'src/audio.js', 'src/input.js', 'src/rival-worker.js', 'src/camera.js', 'src/street.js', 'src/world.js', 'src/world-shader.js', 'src/arcade.js', 'src/arcade-engine.js', 'src/pit-renderer.js'];
+  'src/main.js', 'src/engine.js', 'src/ai.js', 'src/renderers.js', 'src/shaders.js', 'src/audio.js', 'src/input.js', 'src/rival-worker.js', 'src/camera.js', 'src/street.js', 'src/world.js', 'src/world-shader.js', 'src/arcade.js', 'src/arcade-engine.js', 'src/pit-renderer.js', 'src/klax-renderer.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
