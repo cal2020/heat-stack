@@ -108,7 +108,7 @@ function resize() {
   let cs, cyPx;
   if (portrait) {
     const pw = Math.min(86, w * 0.2);
-    const bottom = touchOn ? 150 : 24, top = 60;
+    const bottom = touchOn ? 230 : 24, top = 60;
     cs = Math.min((w - pw * 2 - 28) / 10, (h - top - bottom) / 20);
     cyPx = top + (h - top - bottom) / 2;
   } else {
@@ -190,10 +190,17 @@ function popup(big, sub = '', cls = 'cool', yFrac = 0.42) {
   $('#popups').appendChild(el);
   setTimeout(() => el.remove(), 1300);
 }
+function clearOverlays() {
+  for (const id of ['banner', 'popups', 'emotes']) $('#'+id).replaceChildren();
+  clearTimeout(phoneTimer);
+  $('#phone').hidden = true; $('#phone').classList.remove('ring');
+  $('#job').hidden = true; $('#radioCard').classList.remove('show');
+}
+let phoneTimer;
 function banner(text, color = '#ff4d6d', sub = '') {
   const el = document.createElement('div'); el.className = 'msg'; el.style.color = color; el.textContent = text;
   if (sub) { const sm = document.createElement('small'); sm.textContent = sub; el.appendChild(sm); }
-  $('#banner').appendChild(el); setTimeout(() => el.remove(), 2300);
+  $('#banner').replaceChildren(el); setTimeout(() => el.remove(), 1800);
 }
 
 // ------------------------------------------------------------------ street systems (jobs, chopper, bribes, radio)
@@ -201,7 +208,9 @@ const street = new Street({
   popup: (...a) => popup(...a), banner: (...a) => banner(...a), crew: (...a) => crew(...a), audio,
   phone(show, d) {
     const el = $('#phone');
-    if (!show) { el.classList.remove('ring'); setTimeout(() => { if (!street.job) el.hidden = true; }, 300); return; }
+    clearTimeout(phoneTimer);
+    if (!show) { el.classList.remove('ring'); el.hidden = true; return; }
+    phoneTimer = setTimeout(() => { el.hidden = true; el.classList.remove('ring'); }, 3200);
     el.hidden = false; el.classList.add('ring');
     $('#phoneFace').textContent = d.contact.face;
     $('#phoneWho').textContent = `${d.contact.name} · ${d.contact.role}`;
@@ -227,6 +236,7 @@ function setStation(i, announce = true) {
     el.innerHTML = '<b></b><small></small>'; el.querySelector('b').textContent = station.name;
     el.querySelector('small').textContent = station.dj ? `${station.dj} — ${station.tag}` : station.tag;
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(el.expiry); el.expiry = setTimeout(() => el.classList.remove('show'), 2700);
   }
 }
 function updateBribe() {
@@ -353,12 +363,15 @@ function updateHud(snap) {
 function rivalSkill() { return [{ pps: 0.9, mistake: 0.14, name: 'ROOKIE RAY' }, { pps: 1.6, mistake: 0.04, name: 'VEGA' }, { pps: 2.6, mistake: 0, name: 'LEGEND KAI' }][settings.rival] || { pps: 1.6, mistake: 0.04, name: 'VEGA' }; }
 
 function startGame(m) {
+  clearOverlays();
   audio.unlock();
+  cam.revolution = null;
+  if (m === 'revolutions') cam.setMode('tilt');
   mode = m;
   let seed = (Math.random() * 2 ** 32) >>> 0;
   if (m === 'daily') seed = seedFromString('daily-' + todayKey());
   if (m === 'challenge' && challenge) seed = challenge.s >>> 0;
-  game = new Game({ seed, heatEnabled: m !== 'chill' });
+  game = new Game({ seed, heatEnabled: m !== 'chill' && m !== 'revolutions' });
   running = true; paused = false; parts.length = 0; lastHud = {};
   $('#menu').hidden = true; $('#over').hidden = true; $('#pause').hidden = true; $('#hud').hidden = false;
   $('#ghostRace').hidden = m !== 'challenge';
@@ -373,11 +386,11 @@ function startGame(m) {
   } else $('#rival').hidden = true;
   $('#rightPanel').classList.toggle('compact', m === 'rival');
   input.enabled = true;
-  street.reset(game, m !== 'chill' && m !== 'rival');
+  street.reset(game, m !== 'chill' && m !== 'rival' && m !== 'revolutions');
   audio.intensity = 0; audio.start();
   resize();
   crew('chill', 2000, true);
-  banner(m === 'rival' ? 'CREW RIVAL' : m === 'daily' ? 'DAILY HEIST' : m === 'challenge' ? `BEAT ${challenge.n.toUpperCase()}` : m === 'chill' ? 'NIGHT DRIVE' : 'STREET RUN', district.accent);
+  banner(m === 'revolutions' ? 'REVOLUTIONS 3D' : m === 'rival' ? 'CREW RIVAL' : m === 'daily' ? 'DAILY HEIST' : m === 'challenge' ? `BEAT ${challenge.n.toUpperCase()}` : m === 'chill' ? 'NIGHT DRIVE' : 'STREET RUN', district.accent);
   requestWake();
 }
 
@@ -401,6 +414,7 @@ function pause(on) {
 }
 
 function quitToMenu() {
+  clearOverlays();
   running = false; paused = false; stopRival(); audio.stop();
   $('#hud').hidden = true; $('#pause').hidden = true; $('#over').hidden = true; $('#menu').hidden = false;
   game = null; boardWorld = null; resize(); refreshMenu(); releaseWake();
@@ -415,7 +429,7 @@ const world = new World({
   radio: () => setStation(settings.station + 1),
   carColor: () => hex(district.accent),
   rumble: v => { if (settings.haptics) input.rumble(v, 120); },
-  onExit: () => { world.stop(); $('#menu').hidden = false; refreshMenu(); releaseWake(); audio.stop(); },
+  onExit: () => { clearOverlays(); world.stop(); $('#menu').hidden = false; refreshMenu(); releaseWake(); audio.stop(); },
   onJob: (job, stars) => {
     world.stop();
     fromWorld = job; boardWorld = job.scene;
@@ -424,11 +438,13 @@ const world = new World({
     banner(job.name.toUpperCase(), '#ffcf4a', `${job.who} · stack it, cash it, lose the heat`);
   },
 });
-function enterWorld(resume = false) {
+function enterWorld(resume = false, variant = 'roam') {
+  clearOverlays();
+  if (!resume) world.variant = variant;
   $('#menu').hidden = true; $('#hud').hidden = true; $('#over').hidden = true; $('#pause').hidden = true; $('#touch').hidden = true;
   if (!world.start(resume)) { $('#menu').hidden = false; return; }
   requestWake();
-  if (!resume) banner('OPEN WORLD', '#29e6ff', 'drive into a glowing marker to start a job');
+  if (!resume) banner(world.variant === 'getaway' ? 'MIDNIGHT GETAWAY' : 'OPEN WORLD', '#29e6ff', world.variant === 'getaway' ? 'follow the checkpoint on your radar' : 'drive into a glowing marker to start a job');
 }
 
 function finishRun() {
@@ -494,6 +510,7 @@ function handleEvents() {
         break;
       }
       case 'clear': {
+        if (mode === 'revolutions') cam.revolve();
         audio.play('clear', e);
         for (const y of e.rows) {
           const wy = H - 1 - y + 0.5;
@@ -549,7 +566,7 @@ function frame(now) {
   if (world.active) return;
   input.update(dt);
   if (running && game && !paused) {
-    game.update(dt);
+    if (!(mode === 'revolutions' && cam.revolution)) game.update(dt);
     handleEvents();
     const evs = frameEvents;
     street.update(dt, evs);
@@ -778,7 +795,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.ser
 // ------------------------------------------------------------------ input wiring
 const input = new Input((a, src) => {
   if (a === 'pause') { if (running && game && !game.over) pause(!paused); return; }
-  if (!running || paused || !game || game.over) return;
+  if (!running || paused || !game || game.over || (mode === 'revolutions' && cam.revolution)) return;
   audio.unlock();
   switch (a) {
     case 'left': game.move(-1); break;
@@ -800,7 +817,7 @@ input.das = settings.das; input.arr = settings.arr;
 input.bindButtons($('#touch'));
 $$('#emoteBar button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); emote(+b.dataset.emote); }));
 
-$$('.mode').forEach(b => b.addEventListener('click', () => { if (b.dataset.mode === 'world') { audio.unlock(); enterWorld(); } else startGame(b.dataset.mode); }));
+$$('.mode').forEach(b => b.addEventListener('click', () => { if (b.dataset.mode === 'getaway') { audio.unlock(); enterWorld(false, 'getaway'); } else if (b.dataset.mode === 'world') { audio.unlock(); enterWorld(); } else startGame(b.dataset.mode); }));
 $('#districtBtn').onclick = () => { renderDistricts(); openSheet('#districts'); };
 $('#boardBtn').onclick = () => { renderRecords(); openSheet('#records'); };
 $('#settingsBtn').onclick = () => openSheet('#settings');

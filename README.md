@@ -92,3 +92,11 @@ ES modules, WebGPU, WebGL2, a module Web Worker, Web Audio (a synthesised adapti
 ```bash
 node --test test/*.test.mjs   # Node 18+
 ```
+
+## November 22, 2026 update
+
+Choose **Midnight Getaway** for a separate 90-second driving challenge: follow the radar checkpoint, pass through all three markers, and earn $1,500. Gas, steering and brake are the same as Open World. The timer reports distance to your next checkpoint.
+
+Choose **Revolutions 3D** for the stacking variant. Every line clear sends the camera all the way around the 3D board. Falling and piece input wait during the 2.2-second turn, then resume from the front. The board still uses the classic single-layer rules.
+
+Phone calls disappear after 3.2 seconds. Banners replace each other and disappear after 1.8 seconds. Switching modes clears message overlays. The rotate controls sit above the separately labelled DROP button with about 100 pixels of vertical clearance on a 390×844 phone viewport.

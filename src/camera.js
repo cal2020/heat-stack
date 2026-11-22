@@ -22,6 +22,8 @@ export class CameraRig {
 
   setMode(m) { if (CAMERA_MODES[m]) { this.mode = m; this.onModeChange?.(m); } }
 
+  revolve() { this.revolution = { start: performance.now(), duration: 2200 }; }
+
   frame() { this.free = { yaw: -0.38, pitch: 0.2, dist: DIST, panX: 0, panY: 0 }; }
 
   // Enter free mode from whatever view is on screen so the switch is seamless.
@@ -48,6 +50,11 @@ export class CameraRig {
       if (mode === 'tilt') { yaw = -0.36 + parallax * 0.035; pitch = 0.2; }
       else if (mode === 'orbit') { yaw = Math.sin(t * 0.13) * 0.55; pitch = 0.14 + 0.1 * (0.5 + 0.5 * Math.sin(t * 0.09)); }
       else { yaw = this.free.yaw; pitch = this.free.pitch; dist = this.free.dist; c[0] += this.free.panX; c[1] += this.free.panY; }
+      if (this.revolution) {
+        const progress = clamp((performance.now() - this.revolution.start) / this.revolution.duration, 0, 1);
+        yaw += (progress * progress * (3 - 2 * progress)) * Math.PI * 2;
+        if (progress === 1) this.revolution = null;
+      }
       this.target = [c[0], c[1], c[2]];
       this.eye = [
         c[0] + dist * Math.sin(yaw) * Math.cos(pitch) + shake[0],

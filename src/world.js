@@ -112,6 +112,7 @@ export class World {
       <canvas id="radar" width="320" height="320"></canvas>
       <div class="w-speed"><b id="wSpeed">0</b><small>km/h</small></div>
       <div id="wLoc" class="w-loc"></div>
+      <div id="wChallenge" hidden></div>
       <div id="wPrompt" class="w-prompt" hidden></div>
       <div class="w-help" id="wHelp">W/↑ gas · S/↓ brake · A/D steer · Space drift · Shift boost · E start job · R radio · V camera · drag to look</div>
       <div class="w-touch" id="wTouch" hidden>
@@ -230,9 +231,15 @@ export class World {
       // pull away from the marker so we don't immediately re-trigger
       const c = this.car; c.v = [0, 0]; c.speed = 0;
     }
+    if (!resume) {
+      this.race = this.variant === 'getaway' ? { left: 90, index: 0, points: [[-120, roadZ(-120)], [-200, roadZ(-200)], [-240, 60]] } : null;
+    }
+    if (!resume && this.race) this.car.yaw = -Math.PI/2;
+    this.root.querySelector('#wChallenge').hidden = !this.race;
     this.root.hidden = false;
     this.root.querySelector('#wTouch').hidden = !this.h.isTouch;
     this.root.querySelector('#wHelp').hidden = this.h.isTouch;
+    clearTimeout(this.helpTimer); this.helpTimer = setTimeout(() => { this.root.querySelector('#wHelp').hidden = true; }, 6500);
     this.active = true;
     this.resize();
     this.last = performance.now();
@@ -249,6 +256,7 @@ export class World {
     if (this.root) this.root.hidden = true;
     this.engineSound(false);
     this.keys.clear();
+    this.touch = { steer: 0, gas: 0, brake: 0, drift: 0 };
   }
 
   engineSound(on) {
@@ -403,6 +411,7 @@ export class World {
     }
     for (const k in this.cooldown) this.cooldown[k] -= dt;
     const pr = this.root.querySelector('#wPrompt');
+    if (this.race) this.near = null;
     if (this.near) {
       pr.hidden = false;
       const label = `${this.h.isTouch ? 'Tap' : 'Press E'} · ${this.near.name} — ${this.near.who}`;
@@ -411,7 +420,7 @@ export class World {
   }
 
   enterJob() {
-    if (!this.near) return;
+    if (this.race || !this.near) return;
     const j = this.near;
     this.cooldown[j.id] = 20;
     // park the car just past the marker
@@ -471,6 +480,22 @@ export class World {
     const ctl = this.physics(dt);
     this.updateHeat(dt);
     this.pickupsUpdate(dt);
+    if (this.race) {
+      const r = this.race; r.left = Math.max(0, r.left - dt);
+      const target = r.points[r.index];
+      if (target && Math.hypot(this.car.x-target[0], this.car.z-target[1]) < 14) { r.index++; this.h.audio.play('cash'); }
+      const card = this.root.querySelector('#wChallenge');
+      if (r.index === r.points.length || r.left === 0) {
+        const won = r.index === r.points.length;
+        if (won) this.h.wallet.add(1500);
+        card.textContent = won ? 'GETAWAY COMPLETE · +$1,500' : 'TIME UP · return to menu to retry';
+        this.race = null;
+        setTimeout(() => { card.hidden = true; }, 3500);
+      } else {
+        const distance = Math.round(Math.hypot(this.car.x-r.points[r.index][0], this.car.z-r.points[r.index][1]));
+        card.textContent = `GETAWAY · ${Math.ceil(r.left)}s · checkpoint ${r.index+1}/3 · ${distance}m`;
+      }
+    }
     this.flash *= Math.pow(0.02, dt);
     const { eye, target, zoom } = this.camera(dt);
     // district toast
@@ -479,6 +504,7 @@ export class World {
       this.district = dname;
       const el = this.root.querySelector('#wLoc');
       el.textContent = dname; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+      clearTimeout(this.locationTimer); this.locationTimer = setTimeout(() => el.classList.remove('show'), 3300);
     }
     if (this.eng) {
       const a = this.h.audio.ctx.currentTime, sp = this.car.speed;
@@ -517,7 +543,8 @@ export class World {
     // markers: jobs + nearest live pickups
     const marks = new Float32Array(32);
     let n = 0;
-    for (const j of JOBS) { if (n >= 8) break; marks.set([j.x, j.z, j.studio ? 3 : 1, this.cooldown[j.id] > 0 ? 0 : 1], n * 4); n++; }
+    if (this.race) { const [x,z] = this.race.points[this.race.index]; marks.set([x,z,1,1], 0); n++; }
+    for (const j of (this.race ? [] : JOBS)) { if (n >= 8) break; marks.set([j.x, j.z, j.studio ? 3 : 1, this.cooldown[j.id] > 0 ? 0 : 1], n * 4); n++; }
     const live = this.pickups.filter(p => p.alive).map(p => [p, Math.hypot(p.x - c.x, p.z - c.z)]).sort((a, b) => a[1] - b[1]);
     for (const [p] of live) { if (n >= 8) break; marks.set([p.x, p.z, 2, 1], n * 4); n++; }
     gl.uniform4fv(u.uMarks, marks);
@@ -560,10 +587,12 @@ export class World {
       ctx.fill();
     };
     for (const p of this.pickups) if (p.alive) blip(p.x, p.z, '#3dff8a', 4);
-    for (const j of JOBS) blip(j.x, j.z, j.studio ? '#5ab4ff' : '#ffcf4a', 8, 'sq');
+    if (this.race) { const [x,z] = this.race.points[this.race.index]; blip(x,z,'#29e6ff',12,'sq'); }
+    for (const j of (this.race ? [] : JOBS)) blip(j.x, j.z, j.studio ? '#5ab4ff' : '#ffcf4a', 8, 'sq');
     ctx.restore();
     // edge arrows for off-radar jobs
-    for (const j of JOBS) {
+    const guidance = this.race ? [{x:this.race.points[this.race.index][0], z:this.race.points[this.race.index][1]}] : JOBS;
+    for (const j of guidance) {
       const dx = j.x - c.x, dz = j.z - c.z, d = Math.hypot(dx, dz);
       if (d * k < R - 10) continue;
       const ang = Math.atan2(dx, dz) - c.yaw;
