@@ -386,7 +386,8 @@ function startGame(m) {
   } else $('#rival').hidden = true;
   $('#rightPanel').classList.toggle('compact', m === 'rival');
   input.enabled = true;
-  street.reset(game, m !== 'chill' && m !== 'rival' && m !== 'revolutions');
+  street.reset(game, !fromWorld && m !== 'chill' && m !== 'rival' && m !== 'revolutions');
+  if (fromWorld) { $('#job').hidden = false; $('#jobTitle').textContent = 'DRIVING JOB'; $('#jobProg').textContent = '0/8 lines'; $('#jobTime').textContent = ''; }
   audio.intensity = 0; audio.start();
   resize();
   crew('chill', 2000, true);
@@ -435,7 +436,7 @@ const world = new World({
     fromWorld = job; boardWorld = job.scene;
     startGame('street');
     if (stars) { game.heat = Math.min(4.5, stars); }
-    banner(job.name.toUpperCase(), '#ffcf4a', `${job.who} · stack it, cash it, lose the heat`);
+    banner(job.name.toUpperCase(), '#ffcf4a', 'Clear 8 lines · then return to your car');
   },
 });
 function enterWorld(resume = false, variant = 'roam') {
@@ -470,7 +471,7 @@ function finishRun() {
   crew(won ? 'party' : 'dead', 99999, true);
   const t = $('#overTitle');
   t.textContent = won ? 'YOU WIN' : 'BUSTED'; t.className = won ? 'clean' : 'busted';
-  let sub = won ? `${$('#rivalName').textContent} went down first.` : 'The stack hit the ceiling.';
+  let sub = fromWorld ? (won ? 'Eight lines cleared. Returning to your car.' : 'Job ended. Returning to your car.') : won ? `${$('#rivalName').textContent} went down first.` : 'The stack hit the ceiling.';
   if (mode === 'challenge') sub = s.score > challenge.sc ? `You beat ${challenge.n} by ${(s.score - challenge.sc).toLocaleString()}!` : `${challenge.n} still leads by ${(challenge.sc - s.score).toLocaleString()}.`;
   $('#overSub').textContent = sub;
   const tm = Math.floor(s.time / 1000);
@@ -482,7 +483,12 @@ function finishRun() {
   street.reset(null);
   $('#results').innerHTML = cells.map(([k, v, nb]) => `<div class="${nb ? 'newbest' : ''}"><span>${k}${nb ? ' · BEST' : ''}</span><b>${v}</b></div>`).join('');
   $('#overMenuBtn').textContent = fromWorld ? '🚗 Back to the streets' : 'Menu';
-  setTimeout(() => { $('#over').hidden = false; }, 900);
+  const finishedGame = game;
+  if (fromWorld) banner(won ? 'JOB COMPLETE' : 'JOB ENDED', won ? '#3dff8a' : '#ffcf4a', 'Returning to your parked car…');
+  setTimeout(() => {
+    if (game !== finishedGame) return;
+    if (fromWorld) quitToMenu(); else $('#over').hidden = false;
+  }, fromWorld ? 1600 : 900);
   input.enabled = false;
   stopRival();
   releaseWake();
@@ -511,6 +517,7 @@ function handleEvents() {
       }
       case 'clear': {
         if (mode === 'revolutions') cam.revolve();
+        if (fromWorld && game.lines >= 8 && !game.over) game.end('win');
         audio.play('clear', e);
         for (const y of e.rows) {
           const wy = H - 1 - y + 0.5;
@@ -573,6 +580,7 @@ function frame(now) {
     if (game.events.length) handleEvents();
     const snap = game.snapshot();
     updateHud(snap); drawSide(snap); drawRival(); updateBribe();
+    if (fromWorld && !game.over) $('#jobProg').textContent = `${Math.min(game.lines, 8)}/8 lines`;
     const danger = game.dangerLevel();
     if (danger > 0.7 && crewMood !== 'nervous' && performance.now() > crewUntil) crew('nervous', 2500);
   }

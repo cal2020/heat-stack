@@ -1,16 +1,116 @@
 {
-  "id": "audit-2026-11-22-controls-variants",
+  "id": "audit-2026-11-22-driving-return",
   "date": "2026-11-22",
   "sourceUrl": "https://github.com/cal2020/heat-stack",
-  "environment": "Local Chromium, mobile viewport 390x844; emulation, not physical iPhone",
+  "environment": "Local Chromium desktop; real engine AI cleared eight lines, browser observed automatic return; terrain simulation uses actual terrain",
   "checks": {
-    "engineTests": 7,
+    "projectTests": 10,
     "releaseSyncTests": 13,
     "portfolioGate": "PASS; no existing heat-stack catalog identity",
-    "rotateToDropGapPx": 100.59375,
-    "phoneExpiresDuringJob": true,
-    "revolutionStartsAndEnds": true,
-    "getawayThreeCheckpointsReward": true
+    "start": {
+      "x": 64,
+      "z": 0,
+      "yaw": 1.5707963267948966
+    },
+    "uphillProgressInTwoSeconds": {
+      "distance": 29.6392,
+      "elevationGain": 25.4896
+    },
+    "eightLineJobAutoReturns": true,
+    "bustedJobAutoReturns": true,
+    "preserved": [
+      "position",
+      "heading",
+      "wanted level",
+      "camera mode",
+      "pickup state"
+    ],
+    "browserErrors": []
+  },
+  "previousAudit": {
+    "id": "audit-2026-11-22-controls-variants",
+    "date": "2026-11-22",
+    "sourceUrl": "https://github.com/cal2020/heat-stack",
+    "environment": "Local Chromium, mobile viewport 390x844; emulation, not physical iPhone",
+    "checks": {
+      "engineTests": 7,
+      "releaseSyncTests": 13,
+      "portfolioGate": "PASS; no existing heat-stack catalog identity",
+      "rotateToDropGapPx": 100.59375,
+      "phoneExpiresDuringJob": true,
+      "revolutionStartsAndEnds": true,
+      "getawayThreeCheckpointsReward": true
+    },
+    "files": [
+      {
+        "path": "icon.svg",
+        "sha256": "c117a737c1e54699fa60db38f5616b1a7d13a2db72825c5a2c7f3888808ce064"
+      },
+      {
+        "path": "index.html",
+        "sha256": "d066d13a1ec0fcf6b7ee3f89a030060a47ec575007440d6e4e8d03604f0f6bf0"
+      },
+      {
+        "path": "manifest.webmanifest",
+        "sha256": "db803ef2587cdd692eb23d1b7598c4295e3fbe2b09842488cc806c6900127eec"
+      },
+      {
+        "path": "src/ai.js",
+        "sha256": "5e4c1b222b9963d43501506a9c694b2aa0fd1da88a1d5a13d55836c9db77f73f"
+      },
+      {
+        "path": "src/audio.js",
+        "sha256": "f748dd7a9d229a968148d939255d533d8292b0ea8a1ec1af2e76a03e8e93984a"
+      },
+      {
+        "path": "src/camera.js",
+        "sha256": "4886f823fd7d534e9c8e827a2cc293ab9d2402e1e669320ef218575ef7ab5ca3"
+      },
+      {
+        "path": "src/engine.js",
+        "sha256": "7dcf83db4c6cf0d8438deec496cd10e15b96b69564e905388660bcdb3e32f1a7"
+      },
+      {
+        "path": "src/input.js",
+        "sha256": "6ab93adf251f50cc89d673b3c34f6b43d1f4b49470cb789f1b41fcadd1bf4d1a"
+      },
+      {
+        "path": "src/main.js",
+        "sha256": "7d996141bfdad7e85d6b6199a99c30ab8b4bda0a21d73fc84775641f6bdd0076"
+      },
+      {
+        "path": "src/renderers.js",
+        "sha256": "c2d63ce00522d67d87dcb31d364bd5708d87dfa4027889a3cea23e7d69970742"
+      },
+      {
+        "path": "src/rival-worker.js",
+        "sha256": "1d43202a9ed07a136d46925e8defd39b9863df398b52a25f6751e49d0857a21d"
+      },
+      {
+        "path": "src/shaders.js",
+        "sha256": "cc8cd8e7a8af75c698007517260f948f01d040a3f00f0c310cfcd38af4b479de"
+      },
+      {
+        "path": "src/street.js",
+        "sha256": "35ce2a527b88f34bc6d31b9d83487c674754d4736533714f1660bf49bb93503c"
+      },
+      {
+        "path": "src/world-shader.js",
+        "sha256": "9c2d3abe1ac57c6f2708b9f0195bf9df90960d805bd824e9322fc3e0ee974dcc"
+      },
+      {
+        "path": "src/world.js",
+        "sha256": "f158e437a58291b48979db134eab8966b602cfbee5a201277ec57e8e2da3cbb2"
+      },
+      {
+        "path": "styles.css",
+        "sha256": "c05b8252f55b5a17a814d222482beec52dfc2f2ca4eaa1a01b29788f6dfb29b5"
+      },
+      {
+        "path": "sw.js",
+        "sha256": "05c46031975dfa2b7d13e743656765f8d4ebb4c5234ec3b8770656bae9e94d82"
+      }
+    ]
   },
   "files": [
     {
@@ -47,7 +147,7 @@
     },
     {
       "path": "src/main.js",
-      "sha256": "7d996141bfdad7e85d6b6199a99c30ab8b4bda0a21d73fc84775641f6bdd0076"
+      "sha256": "313f9ae7f2c32c1bec84564064f2eade7794f890e737090d06aca3f01d34da88"
     },
     {
       "path": "src/renderers.js",
@@ -71,7 +171,7 @@
     },
     {
       "path": "src/world.js",
-      "sha256": "f158e437a58291b48979db134eab8966b602cfbee5a201277ec57e8e2da3cbb2"
+      "sha256": "f5c06b04137cd145b6d42d4fed3436113a5fef94fd6496fca4d8e6be09cfd116"
     },
     {
       "path": "styles.css",
@@ -79,7 +179,7 @@
     },
     {
       "path": "sw.js",
-      "sha256": "05c46031975dfa2b7d13e743656765f8d4ebb4c5234ec3b8770656bae9e94d82"
+      "sha256": "95fd7aed8d9e4355d2dac2e6d17d9fb12530e656d4898aebdaa5fe6071cf225c"
     }
   ]
 }

@@ -1,5 +1,5 @@
 // Offline-first cache so the game runs installed on Mac, Android and Raspberry Pi without a network.
-const CACHE = 'heat-stack-v3-controls';
+const CACHE = 'heat-stack-v4-driving';
 const ASSETS = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg',
   'src/main.js', 'src/engine.js', 'src/ai.js', 'src/renderers.js', 'src/shaders.js', 'src/audio.js', 'src/input.js', 'src/rival-worker.js', 'src/camera.js', 'src/street.js', 'src/world.js', 'src/world-shader.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });

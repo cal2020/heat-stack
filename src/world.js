@@ -20,6 +20,8 @@ function vnoise(px, py) {
 function fbm2(px, py, oct) { let s = 0, a = 0.5; for (let i = 0; i < oct; i++) { s += a * vnoise(px, py); px = px * 2.02 + 17.3; py = py * 2.02 + 9.1; a *= 0.5; } return s; }
 function rectMask(x, z, ax, az, bx, bz, fe) { const d = Math.max(Math.max(ax - x, x - bx), Math.max(az - z, z - bz)); return 1 - smooth(0, fe, d); }
 export const roadZ = x => Math.sin(x * 0.008) * 40;
+// Gravity follows the angle of the hill; it must not grow without limit with rise/run.
+export const slopeGravity = grade => 9.8 * grade / Math.hypot(1, grade);
 export function terrainH(x, z, oct = 4) {
   const m = fbm2(x * 0.0045, z * 0.0045, oct);
   let h = Math.pow(Math.max(m - 0.18, 0), 1.6) * 420;
@@ -225,16 +227,22 @@ export class World {
     if (!this.initGL()) { this.h.toast('Open World needs WebGL2'); return false; }
     this.buildRadarMap();
     if (!resume) {
-      const c = this.car; c.x = -60; c.z = roadZ(-60); c.yaw = Math.PI / 2; c.v = [0, 0]; c.speed = 0;
+      const c = this.car; c.x = this.variant === 'getaway' ? -60 : 64; c.z = this.variant === 'getaway' ? roadZ(-60) : 0; c.yaw = Math.PI / 2; c.v = [0, 0]; c.speed = 0;
+      c.pitch = c.roll = c.vy = 0;
       c.y = Math.max(terrainH(c.x, c.z), 0);
     } else {
-      // pull away from the marker so we don't immediately re-trigger
+      // Resume at the parked position; the job cooldown prevents immediate re-entry.
       const c = this.car; c.v = [0, 0]; c.speed = 0;
     }
     if (!resume) {
       this.race = this.variant === 'getaway' ? { left: 90, index: 0, points: [[-120, roadZ(-120)], [-200, roadZ(-200)], [-240, 60]] } : null;
     }
     if (!resume && this.race) this.car.yaw = -Math.PI/2;
+    if (!resume) {
+      const c = this.car; this.cam.orbit = 0; this.cam.orbitHold = 0;
+      this.cam.eye = [c.x-Math.sin(c.yaw)*11, c.y+4, c.z-Math.cos(c.yaw)*11];
+      this.cam.target = [c.x+Math.sin(c.yaw)*4, c.y+1, c.z+Math.cos(c.yaw)*4];
+    }
     this.root.querySelector('#wChallenge').hidden = !this.race;
     this.root.hidden = false;
     this.root.querySelector('#wTouch').hidden = !this.h.isTouch;
@@ -321,8 +329,8 @@ export class World {
     // slope resistance
     const ahead = terrainH(c.x + fx * 2, c.z + fz * 2);
     const slope = (ahead - ground) / 2;
-    if (slope > 0.5) fwd *= Math.pow(0.15, dt * (slope - 0.5) * 4);
-    fwd -= slope * 9.8 * dt * 0.6;
+    fwd -= slopeGravity(slope) * dt;
+    fwd = clamp(fwd, -18, maxV);
     c.v = [fx * fwd + rx * lat, fz * fwd + rz * lat];
     c.x += c.v[0] * dt; c.z += c.v[1] * dt;
     c.x = clamp(c.x, -560, 560); c.z = clamp(c.z, -560, 560);
@@ -423,8 +431,8 @@ export class World {
     if (this.race || !this.near) return;
     const j = this.near;
     this.cooldown[j.id] = 20;
-    // park the car just past the marker
-    this.car.x -= Math.sin(this.car.yaw) * 10; this.car.z -= Math.cos(this.car.yaw) * 10;
+    // Park exactly here. Keep pose, camera, wanted level and pickups for the return.
+    this.car.v = [0, 0]; this.car.speed = 0;
     this.h.onJob(j, this.stars);
   }
 

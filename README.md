@@ -100,3 +100,8 @@ Choose **Midnight Getaway** for a separate 90-second driving challenge: follow t
 Choose **Revolutions 3D** for the stacking variant. Every line clear sends the camera all the way around the 3D board. Falling and piece input wait during the 2.2-second turn, then resume from the front. The board still uses the classic single-layer rules.
 
 Phone calls disappear after 3.2 seconds. Banners replace each other and disappear after 1.8 seconds. Switching modes clears message overlays. The rotate controls sit above the separately labelled DROP button with about 100 pixels of vertical clearance on a 390×844 phone viewport.
+
+### Driving and job return fix
+Free driving begins on the flat eastbound road at the city entrance. Hill resistance is based on slope angle so the car can climb hills under normal throttle. The mountain route remains the starting point for Midnight Getaway.
+
+Press **E** (or tap the marker prompt) to park exactly at a job marker and play an eight-line stacking job. Clear eight lines or end the run, and after a brief result message driving resumes automatically at the same position and heading. Wanted level, cash, pickups and camera state stay in the driving session.
